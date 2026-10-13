@@ -1,0 +1,1902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complete Building Massing Model | Ground + 14 Floors & 3-Level Basement</title>
+  <link rel="stylesheet" href="styles.css?v=20261013">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231e3a8a'%3E%3Cpath d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/%3E%3C/svg%3E">
+  <script src="vendor/three.min.js"></script>
+  <script src="vendor/OrbitControls.umd.js"></script>
+  <script src="model_data.js?v=20261013"></script>
+</head>
+<body>
+  <!-- 3D WebGL Canvas Container -->
+  <div id="canvas-container"></div>
+  <div id="labels-container" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none; z-index: 5; overflow: hidden;"></div>
+  <div id="hover-tooltip"></div>
+
+  <!-- Header Bar -->
+  <header class="top-header">
+    <div class="logo-badge">
+      <div class="logo-icon">G+14<br>B3</div>
+      <div class="title-group">
+        <h1>COMPLETE 3D BUILDING MASSING MODEL</h1>
+        <p>Ground + 14 Residential Floors (+48.0m) & 3-Level Basement (-9.6m)</p>
+      </div>
+    </div>
+    <div class="status-pill">
+      <span class="status-dot"></span>
+      <span>18 Vertical Levels &bull; 364 Apartments &bull; 5 Continuous Cores</span>
+    </div>
+  </header>
+
+  <!-- Top Right Camera Viewport Toolbar -->
+  <nav class="top-toolbar">
+    <button class="tool-btn active" id="btn-view-iso" title="High Architectural Isometric View">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      <span>Isometric</span>
+    </button>
+    <button class="tool-btn" id="btn-view-top" title="Top Plan View (North Up)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
+      <span>Top (Plan)</span>
+    </button>
+    <button class="tool-btn" id="btn-view-front" title="Front Elevation (South Elevation)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M3 8l9-5 9 5"/></svg>
+      <span>Front</span>
+    </button>
+    <button class="tool-btn" id="btn-view-side" title="Side Elevation (East Elevation)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/></svg>
+      <span>Side</span>
+    </button>
+    <button class="tool-btn" id="btn-view-section" title="Section / Cutaway View">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="2" x2="12" y2="22"/><path d="M12 2a10 10 0 0 1 0 20z" fill="currentColor"/></svg>
+      <span>Section</span>
+    </button>
+    <button class="tool-btn" id="btn-view-basement" title="Substructure & Basements View">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      <span>Basements</span>
+    </button>
+    <button class="tool-btn" id="btn-view-reset" title="Reset Camera View">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+      <span>Reset</span>
+    </button>
+  </nav>
+
+  <!-- Live Google Sheets Inventory Feed & Status Legend Panel -->
+  <aside class="inventory-card" id="inventory-card">
+    <div class="inventory-card-header">
+      <div class="live-title-group">
+        <span class="live-dot" id="sync-status-dot"></span>
+        <span class="live-heading">LIVE INVENTORY FEED</span>
+      </div>
+      <div class="live-actions">
+        <span class="sync-pill" id="sync-status-badge">Connecting...</span>
+        <button class="icon-btn-small" id="btn-refresh-feed" title="Refresh Live Inventory Now">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </button>
+        <button class="icon-btn-small" id="btn-config-feed" title="Configure Live Google Sheet Feed">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Feed Configuration Panel -->
+    <div class="feed-config-panel" id="feed-config-panel" style="display: none;">
+      <div class="feed-config-header">
+        <span>Google Sheets Feed Config</span>
+        <button class="config-close-btn" id="btn-close-config" title="Close">&times;</button>
+      </div>
+      <div class="feed-config-body">
+        <label for="input-feed-url">API Endpoint URL:</label>
+        <input type="text" id="input-feed-url" placeholder="https://script.google.com/macros/s/AKfycbx9_AbznKZDe8QzBz0wzsyvYBSf-nlJUig1FzbZwG6uDed2jw9G59xtiKKM2x4aANSf/exec" />
+        
+        <label for="select-poll-rate">Auto-Refresh Rate:</label>
+        <select id="select-poll-rate">
+          <option value="30000" selected>Every 30 Seconds (Standard)</option>
+          <option value="10000">Every 10 Seconds</option>
+          <option value="5000">Every 5 Seconds (Fast)</option>
+          <option value="3000">Every 3 Seconds (Ultra Fast)</option>
+        </select>
+        
+        <div class="feed-config-buttons">
+          <button id="btn-save-feed-config" class="primary-btn">Save & Sync</button>
+          <button id="btn-reset-feed-config" class="secondary-btn">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dynamic Inventory Summary -->
+    <div class="inventory-summary-section">
+      <div class="summary-total-row">
+        <span>Total Flats:</span>
+        <strong id="count-total">364</strong>
+      </div>
+      <div class="summary-metrics-grid">
+        <div class="stat-pill status-available">
+          <span class="color-badge color-available"></span>
+          <span class="stat-label">Available:</span>
+          <span class="stat-num" id="count-available">--</span>
+        </div>
+        <div class="stat-pill status-booked">
+          <span class="color-badge color-booked"></span>
+          <span class="stat-label">Booked:</span>
+          <span class="stat-num" id="count-booked">--</span>
+        </div>
+        <div class="stat-pill status-hold">
+          <span class="color-badge color-hold"></span>
+          <span class="stat-label">Hold:</span>
+          <span class="stat-num" id="count-hold">--</span>
+        </div>
+        <div class="stat-pill status-registered">
+          <span class="color-badge color-registered"></span>
+          <span class="stat-label">Registered:</span>
+          <span class="stat-num" id="count-registered">--</span>
+        </div>
+        <div class="stat-pill status-sold">
+          <span class="color-badge color-sold"></span>
+          <span class="stat-label">Sold:</span>
+          <span class="stat-num" id="count-sold">--</span>
+        </div>
+        <div class="stat-pill status-na">
+          <span class="color-badge color-na"></span>
+          <span class="stat-label">N/A:</span>
+          <span class="stat-num" id="count-na">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inventory Status Color Legend -->
+    <div class="inventory-legend-section">
+      <div class="legend-header-title">STATUS COLOR LEGEND</div>
+      <div class="legend-items-list">
+        <div class="legend-entry">
+          <span class="color-badge color-available"></span>
+          <span class="legend-text"><strong>GREEN</strong> = Available</span>
+        </div>
+        <div class="legend-entry">
+          <span class="color-badge color-booked"></span>
+          <span class="legend-text"><strong>RED</strong> = Booked</span>
+        </div>
+        <div class="legend-entry">
+          <span class="color-badge color-hold"></span>
+          <span class="legend-text"><strong>YELLOW</strong> = Hold</span>
+        </div>
+        <div class="legend-entry">
+          <span class="color-badge color-registered"></span>
+          <span class="legend-text"><strong>BLUE</strong> = Registered</span>
+        </div>
+        <div class="legend-entry">
+          <span class="color-badge color-sold"></span>
+          <span class="legend-text"><strong>DARK GREEN</strong> = Sold</span>
+        </div>
+        <div class="legend-entry">
+          <span class="color-badge color-na"></span>
+          <span class="legend-text"><strong>GREY</strong> = N/A</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="feed-footer-status">
+      <span id="feed-last-updated">Auto-refreshing every 30s</span>
+    </div>
+  </aside>
+
+  <!-- Toggle Button for Floating Control Panel -->
+  <button class="panel-toggle-fab" id="btn-toggle-panel" title="Toggle Controls">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+  </button>
+
+  <!-- Left Control Panel -->
+  <aside class="control-panel" id="control-panel">
+    <div class="panel-header">
+      <h2>BUILDING CONTROLS</h2>
+      <button id="btn-close-panel" style="background:none; border:none; cursor:pointer; color:var(--text-secondary);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <!-- Floor Level Selection & Highlighting -->
+    <div class="section-group" style="background: #f1f4f9; padding: 12px; border-radius: var(--radius-md); border: 1px solid #d7e0ec;">
+      <div class="section-title" style="color: #1e3a8a; display:flex; justify-content:space-between; align-items:center;">
+        <span>FLOOR LEVEL SELECTOR</span>
+        <span id="active-floor-badge" style="font-size:10px; background:#1e3a8a; color:#fff; padding:2px 6px; border-radius:4px;">ALL FLOORS</span>
+      </div>
+
+      <div class="floor-selector-grid" id="floor-selector-container">
+        <!-- Rendered dynamically: All, Ground, 1F to 14F -->
+      </div>
+
+      <div class="btn-grid" style="margin-top: 6px;">
+        <button class="action-btn" id="btn-exploded-floors" style="background:#fff; border: 1px solid #cbd5e1; font-weight: 600; color:#1e3a8a;">
+          Exploded Floors
+        </button>
+        <button class="action-btn" id="btn-normal-floors" style="background:#fff; border: 1px solid #cbd5e1; font-weight: 600;">
+          Normal View
+        </button>
+      </div>
+
+      <div class="btn-grid" style="margin-top: 4px;">
+        <button class="action-btn" id="btn-show-all-floors" style="font-size:10.5px;">Show All Floors</button>
+        <button class="action-btn" id="btn-hide-residential" style="font-size:10.5px;">Hide Residential</button>
+      </div>
+    </div>
+
+    <!-- Building Transparency & Section Cutaway -->
+    <div class="section-group">
+      <div class="section-title">Vertical Inspection</div>
+
+      <div class="slider-control">
+        <div class="slider-label-row">
+          <span>Building Transparency:</span>
+          <span class="slider-val" id="val-bldg-opacity">0%</span>
+        </div>
+        <input type="range" id="slider-bldg-opacity" min="0" max="95" step="5" value="0">
+      </div>
+
+      <div class="toggle-row" style="margin-top: 4px;">
+        <div class="toggle-label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+          <span style="font-weight: 600;">Vertical Section Cut</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-section-cut">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="slider-control" id="section-slider-wrapper" style="display:none; margin-top: 4px;">
+        <div class="slider-label-row">
+          <span>Section Slice Plane:</span>
+          <span class="slider-val" id="val-section-cut">0 m</span>
+        </div>
+        <input type="range" id="slider-section-cut" min="-45" max="45" step="1" value="0">
+      </div>
+    </div>
+
+    <!-- 3-Level Basement Controls -->
+    <div class="section-group" style="background: #f8fafc; padding: 10px; border-radius: var(--radius-md); border: 1px solid #e2e8f0;">
+      <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>3-LEVEL BASEMENT (-9.6m)</span>
+        <label class="switch" style="transform: scale(0.85);">
+          <input type="checkbox" id="toggle-basement" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="btn-grid" style="margin-top: 4px;">
+        <button class="action-btn" id="btn-exploded-basement">Explode Basement</button>
+        <button class="action-btn" id="btn-cutaway-basement">Basement Cutaway</button>
+      </div>
+    </div>
+
+    <!-- Element Visibility -->
+    <div class="section-group">
+      <div class="section-title">Model Elements</div>
+      
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <span class="color-indicator color-core"></span>
+          <span>Continuous Stair/Lift Cores (5)</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-cores" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <span class="color-indicator color-ground"></span>
+          <span>Ground Floor Mass</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-ground-floor" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <span class="color-indicator color-corridor"></span>
+          <span>Floor Corridors / Slabs</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-corridors" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
+          <span>Floor Elevation Badges</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-labels">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+          <span>Dark Edge Outlines</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-edges" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Render Styles -->
+    <div class="section-group">
+      <div class="section-title">Render Style</div>
+      <div class="btn-grid-3">
+        <button class="action-btn active" id="btn-mode-solid">Solid</button>
+        <button class="action-btn" id="btn-mode-wireframe">Wireframe</button>
+        <button class="action-btn" id="btn-mode-clay">Clay</button>
+      </div>
+    </div>
+
+    <!-- Selected Unit/Floor Details Card -->
+    <div class="section-group">
+      <div class="section-title">Selected Structure Details</div>
+      <div class="inspect-card" id="inspect-card">
+        <div class="inspect-header">
+          <span class="inspect-id" id="card-unit-name">Select an Apartment</span>
+          <span class="inspect-type" id="card-unit-type">G+14 & B3</span>
+        </div>
+        <div class="inspect-status-banner" id="card-status-banner" style="display:none;">
+          <span class="status-indicator-dot" id="card-status-dot"></span>
+          <span id="card-status-text">STATUS: AVAILABLE</span>
+        </div>
+        <div class="inspect-details">
+          <span class="inspect-label">Floor:</span>
+          <span class="inspect-value" id="card-unit-floor">--</span>
+
+          <span class="inspect-label">Position:</span>
+          <span class="inspect-value" id="card-unit-pos">--</span>
+
+          <span class="inspect-label">Status:</span>
+          <span class="inspect-value" id="card-unit-status">--</span>
+
+          <span class="inspect-label">Unit Type:</span>
+          <span class="inspect-value" id="card-unit-bhk">-9.6m to +48.0m</span>
+          
+          <span class="inspect-label">Carpet Area:</span>
+          <span class="inspect-value" id="card-unit-area">18 Levels</span>
+
+          <span class="inspect-label">Elevation:</span>
+          <span class="inspect-value" id="card-unit-elevation">Ground Level</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Bottom Metric Information Bar -->
+  <footer class="bottom-bar">
+    <div class="stat-item">
+      <span>Structure:</span>
+      <span class="stat-val">G+14 & B3</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span>Height:</span>
+      <span class="stat-val">+48.0 m</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span>Total Flats:</span>
+      <span class="stat-val">364</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span>Live Feed:</span>
+      <span class="stat-val" id="bottom-bar-inventory">Connecting...</span>
+    </div>
+  </footer>
+
+  <!-- Offline Standalone Application Logic -->
+  <script>
+const OrbitControls = THREE.OrbitControls;
+
+// --- CONFIGURATION CONSTANTS ---
+const SCALE = 0.05; // 1 pixel = 0.05 meters (20 px = 1 meter)
+const IMG_WIDTH = 1446;
+const IMG_HEIGHT = 2048;
+const CX = IMG_WIDTH / 2;  // 723
+const CY = IMG_HEIGHT / 2; // 1024
+
+const FLOOR_HEIGHT = 3.2;
+const TOTAL_RESIDENTIAL_FLOORS = 14;
+
+// Basement Configuration
+const BASEMENT = {
+  width: 60.0,
+  depth: 96.0,
+  centerX: -0.58,
+  centerZ: -2.38,
+  levelHeight: 3.2,
+  levelsCount: 3,
+  wallThickness: 0.4,
+  slabThickness: 0.35
+};
+
+// Colors matching the architectural reference
+const COLORS = {
+  background: 0xe9eaed,
+  ground: 0xe6e8eb,
+  ivory: 0xf4f1ea,
+  clay: 0xe6e4dd,
+  core: 0x363a3e,
+  coreDetail: 0x272a2e,
+  corridor: 0xc4c7cc,
+  groundFloor: 0xd0d5dd,
+  edge: 0x222426,
+  edgeCore: 0x121314,
+  edgeCorridor: 0x9ba0a6,
+  edgeGround: 0x1f2328,
+  basementWall: 0x3d4147,
+  basementSlab: 0x5a5e66,
+  basementEdge: 0x181a1d,
+  hoverEmissive: 0x332811,
+  selectEmissive: 0x004488,
+  lightKey: 0xfffaf2,
+  lightFill: 0xe5eef8,
+  lightAmbient: 0xffffff
+};
+
+// --- LIVE GOOGLE SHEETS INVENTORY CONFIGURATION ---
+const INVENTORY_API_URL = 'https://script.google.com/macros/s/AKfycbx9_AbznKZDe8QzBz0wzsyvYBSf-nlJUig1FzbZwG6uDed2jw9G59xtiKKM2x4aANSf/exec';
+const DEFAULT_INVENTORY_API_URL = INVENTORY_API_URL;
+const INVENTORY_POLL_INTERVAL_MS = 30000; // Live auto-refresh every 30 seconds
+const STORAGE_URL_KEY = 'hamlet_inventory_api_url_v2';
+const STORAGE_POLL_KEY = 'hamlet_inventory_poll_ms_v2';
+
+// Clear any stale legacy localStorage keys
+localStorage.removeItem('inventory_api_url');
+localStorage.removeItem('inventory_poll_interval_ms');
+
+let storedUrl = localStorage.getItem(STORAGE_URL_KEY);
+if (!storedUrl || !storedUrl.includes('AKfycbx9_AbznKZDe8QzBz0wzsyvYBSf-nlJUig1FzbZwG6uDed2jw9G59xtiKKM2x4aANSf')) {
+  storedUrl = DEFAULT_INVENTORY_API_URL;
+  localStorage.setItem(STORAGE_URL_KEY, DEFAULT_INVENTORY_API_URL);
+}
+let inventoryApiUrl = storedUrl;
+let inventoryPollIntervalMs = parseInt(localStorage.getItem(STORAGE_POLL_KEY) || String(INVENTORY_POLL_INTERVAL_MS), 10);
+if (isNaN(inventoryPollIntervalMs) || inventoryPollIntervalMs < 1000) {
+  inventoryPollIntervalMs = INVENTORY_POLL_INTERVAL_MS;
+}
+
+// Exact Material Status Colors:
+// Available: GREEN
+// Booked: RED
+// Hold: YELLOW
+// Registered: BLUE
+// Sold: DARK GREEN
+// N/A: GREY
+const STATUS_COLORS = {
+  'Available': 0x22c55e,    // Green
+  'Booked': 0xef4444,       // Red
+  'Hold': 0xeab308,         // Yellow
+  'Registered': 0x3b82f6,   // Blue
+  'Sold': 0x14532d,         // Dark Green
+  'N/A': 0x64748b           // Grey
+};
+
+const STATUS_HEX = {
+  'Available': '#22c55e',
+  'Booked': '#ef4444',
+  'Hold': '#eab308',
+  'Registered': '#3b82f6',
+  'Sold': '#14532d',
+  'N/A': '#64748b'
+};
+
+// Inventory State Management
+let apartmentMeshMap = new Map();     // Key: `${floor}_${position}` -> THREE.Mesh
+let cachedInventoryState = new Map(); // Key: `${floor}_${position}` -> string (status)
+let pendingInventoryData = null;      // Retains inventory data if loaded before meshes are built
+let inventoryPollTimer = null;
+let isFetchingInventory = false;
+let lastSyncDate = null;
+let currentSummaryCounts = {
+  total: 364,
+  available: 0,
+  booked: 0,
+  hold: 0,
+  registered: 0,
+  sold: 0,
+  na: 0
+};
+
+// Application State
+let scene, camera, renderer, controls;
+let container = document.getElementById('canvas-container');
+let labelsContainer = document.getElementById('labels-container');
+let tooltip = document.getElementById('hover-tooltip');
+
+// Geometry cache
+let unitShapesCache = {};     // Cached THREE.Shape objects by unit id
+let unitGeomsCache = {};      // Cached ExtrudeGeometry objects by unit id
+let corridorShapesCache = []; // Cached corridor shapes
+
+// Building Level Groups
+let groundFloorGroup = new THREE.Group();
+let residentialFloorGroups = []; // Array of 14 floor groups (index 0 to 13 -> 1F to 14F)
+let continuousCoresGroup = new THREE.Group();
+let basementMasterGroup = new THREE.Group();
+let basementLevelGroups = [];
+let basementFrontWalls = [];
+let allInteractiveMeshes = [];
+let labelElements = [];
+
+// Visualization State
+let showBasements = true;
+let isBasementExploded = false;
+let isBasementCutaway = false;
+let isFloorsExploded = false;
+let selectedFloorNumber = null; // null = all floors active
+let buildingTransparency = 0.0;
+let isSectionCutActive = false;
+let sectionCutPlaneZ = 0.0;
+let showEdges = true;
+let showBevel = true;
+let currentRenderMode = 'solid';
+
+// Section Clipping Plane
+const sectionClippingPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0);
+
+// Materials
+let matApartment, matClay, matCore, matCoreDetail, matCorridor, matGroundFloor, matBasementWall, matBasementSlab, matWireframe, matSiteGround;
+
+// Camera Target Animation
+let isCameraAnimating = false;
+let targetCameraPos = new THREE.Vector3();
+let targetControlsTarget = new THREE.Vector3();
+let targetCameraUp = new THREE.Vector3(0, 1, 0);
+
+// Camera Presets
+const VIEWS = {
+  isometric: {
+    pos: new THREE.Vector3(-65, 78, 85),
+    target: new THREE.Vector3(0, 22, 0),
+    up: new THREE.Vector3(0, 1, 0)
+  },
+  top: {
+    pos: new THREE.Vector3(0, 135, 0.01),
+    target: new THREE.Vector3(0, 0, 0),
+    up: new THREE.Vector3(0, 0, -1)
+  },
+  front: {
+    pos: new THREE.Vector3(0, 24, 115),
+    target: new THREE.Vector3(0, 24, 0),
+    up: new THREE.Vector3(0, 1, 0)
+  },
+  side: {
+    pos: new THREE.Vector3(115, 24, 0),
+    target: new THREE.Vector3(0, 24, 0),
+    up: new THREE.Vector3(0, 1, 0)
+  },
+  section: {
+    pos: new THREE.Vector3(75, 25, 45),
+    target: new THREE.Vector3(0, 20, 0),
+    up: new THREE.Vector3(0, 1, 0)
+  },
+  basement: {
+    pos: new THREE.Vector3(-55, 30, 75),
+    target: new THREE.Vector3(BASEMENT.centerX, -4.8, BASEMENT.centerZ),
+    up: new THREE.Vector3(0, 1, 0)
+  }
+};
+
+let hoveredMesh = null;
+let selectedMesh = null;
+let raycaster = new THREE.Raycaster();
+let mouse = new THREE.Vector2();
+
+// --- INITIALIZATION ---
+async function init() {
+  initScene();
+  initLights();
+  initMaterials();
+  initSiteGround();
+  buildBasementStructure();
+  await loadAndBuildTower();
+  buildFloorSelectorUI();
+  initEventListeners();
+  initInventoryFeed();
+  animate();
+}
+
+function initScene() {
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(COLORS.background);
+  scene.fog = new THREE.FogExp2(COLORS.background, 0.0022);
+
+  camera = new THREE.PerspectiveCamera(36, window.innerWidth / window.innerHeight, 0.5, 600);
+  camera.position.copy(VIEWS.isometric.pos);
+  camera.up.copy(VIEWS.isometric.up);
+
+  renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: false,
+    powerPreference: 'high-performance',
+    preserveDrawingBuffer: true
+  });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.08;
+  renderer.localClippingEnabled = true; // Enables vertical section cutaway
+  container.appendChild(renderer.domElement);
+
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.maxPolarAngle = Math.PI * 0.65;
+  controls.minDistance = 15;
+  controls.maxDistance = 320;
+  controls.target.copy(VIEWS.isometric.target);
+}
+
+function initLights() {
+  const hemiLight = new THREE.HemisphereLight(COLORS.lightAmbient, 0xc4c8cc, 0.72);
+  hemiLight.position.set(0, 120, 0);
+  scene.add(hemiLight);
+
+  const keyLight = new THREE.DirectionalLight(COLORS.lightKey, 1.45);
+  keyLight.position.set(-60, 110, 55);
+  keyLight.castShadow = true;
+  keyLight.shadow.mapSize.width = 4096;
+  keyLight.shadow.mapSize.height = 4096;
+  keyLight.shadow.camera.near = 10;
+  keyLight.shadow.camera.far = 320;
+  keyLight.shadow.bias = -0.0003;
+  keyLight.shadow.normalBias = 0.02;
+
+  const d = 80;
+  keyLight.shadow.camera.left = -d; keyLight.shadow.camera.right = d;
+  keyLight.shadow.camera.top = d; keyLight.shadow.camera.bottom = -d;
+  scene.add(keyLight);
+
+  const fillLight = new THREE.DirectionalLight(COLORS.lightFill, 0.48);
+  fillLight.position.set(60, 70, -50);
+  scene.add(fillLight);
+}
+
+function initMaterials() {
+  matApartment = new THREE.MeshStandardMaterial({
+    color: COLORS.ivory,
+    roughness: 0.78,
+    metalness: 0.04
+  });
+
+  matClay = new THREE.MeshStandardMaterial({
+    color: COLORS.clay,
+    roughness: 0.9,
+    metalness: 0.0
+  });
+
+  matCore = new THREE.MeshStandardMaterial({
+    color: COLORS.core,
+    roughness: 0.65,
+    metalness: 0.12
+  });
+
+  matCoreDetail = new THREE.MeshStandardMaterial({
+    color: COLORS.coreDetail,
+    roughness: 0.8,
+    metalness: 0.1
+  });
+
+  matGroundFloor = new THREE.MeshStandardMaterial({
+    color: COLORS.groundFloor,
+    roughness: 0.82,
+    metalness: 0.05
+  });
+
+  matCorridor = new THREE.MeshStandardMaterial({
+    color: COLORS.corridor,
+    roughness: 0.88,
+    metalness: 0.02
+  });
+
+  matWireframe = new THREE.MeshBasicMaterial({
+    color: 0x333333,
+    wireframe: true
+  });
+
+  matBasementWall = new THREE.MeshStandardMaterial({
+    color: COLORS.basementWall,
+    roughness: 0.75,
+    metalness: 0.12
+  });
+
+  matBasementSlab = new THREE.MeshStandardMaterial({
+    color: COLORS.basementSlab,
+    roughness: 0.85,
+    metalness: 0.06
+  });
+
+  matSiteGround = new THREE.MeshStandardMaterial({
+    color: COLORS.ground,
+    roughness: 0.95,
+    metalness: 0.0
+  });
+}
+
+function initSiteGround() {
+  const groundShape = new THREE.Shape();
+  const halfS = 220;
+  groundShape.moveTo(-halfS, -halfS); groundShape.lineTo(halfS, -halfS);
+  groundShape.lineTo(halfS, halfS); groundShape.lineTo(-halfS, halfS); groundShape.closePath();
+
+  const hole = new THREE.Path();
+  const bw2 = BASEMENT.width / 2 + 0.1, bd2 = BASEMENT.depth / 2 + 0.1;
+  const cx = BASEMENT.centerX, cz = BASEMENT.centerZ;
+  hole.moveTo(cx - bw2, -(cz + bd2)); hole.lineTo(cx + bw2, -(cz + bd2));
+  hole.lineTo(cx + bw2, -(cz - bd2)); hole.lineTo(cx - bw2, -(cz - bd2)); hole.closePath();
+  groundShape.holes.push(hole);
+
+  const groundMesh = new THREE.Mesh(new THREE.ShapeGeometry(groundShape), matSiteGround);
+  groundMesh.rotation.x = -Math.PI / 2;
+  groundMesh.position.y = -0.01;
+  groundMesh.receiveShadow = true;
+  scene.add(groundMesh);
+}
+
+function pixelToWorld(px, py) {
+  return { x: (px - CX) * SCALE, z: (py - CY) * SCALE };
+}
+
+// =========================================================================
+// 1. 3-LEVEL BASEMENT SUBSTRUCTURE
+// =========================================================================
+
+function buildBasementStructure() {
+  basementMasterGroup = new THREE.Group();
+  basementMasterGroup.name = "BasementStructure";
+  basementLevelGroups = [];
+  basementFrontWalls = [];
+
+  const bw = BASEMENT.width, bd = BASEMENT.depth, cx = BASEMENT.centerX, cz = BASEMENT.centerZ;
+  const lh = BASEMENT.levelHeight, st = BASEMENT.slabThickness, wt = BASEMENT.wallThickness;
+
+  const levelsMeta = [
+    { id: "B1", name: "BASEMENT LEVEL 1", short: "B1", topY: 0.0, botY: -3.2, elev: "-3.2 m" },
+    { id: "B2", name: "BASEMENT LEVEL 2", short: "B2", topY: -3.2, botY: -6.4, elev: "-6.4 m" },
+    { id: "B3", name: "BASEMENT LEVEL 3", short: "B3", topY: -6.4, botY: -9.6, elev: "-9.6 m" }
+  ];
+
+  levelsMeta.forEach((lvl, idx) => {
+    const lg = new THREE.Group();
+    lg.userData = { levelIndex: idx, meta: lvl, baseY: 0.0, targetExplodeY: 0.0 };
+
+    // Slab
+    const slabGeo = new THREE.BoxGeometry(bw, st, bd);
+    const slabMesh = new THREE.Mesh(slabGeo, matBasementSlab.clone());
+    slabMesh.position.set(cx, lvl.botY + st / 2, cz);
+    slabMesh.castShadow = true; slabMesh.receiveShadow = true;
+    slabMesh.userData = { ...lvl, isBasement: true, element: 'slab' };
+    slabMesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(slabGeo, 20), new THREE.LineBasicMaterial({ color: COLORS.basementEdge, opacity: 0.75, transparent: true })));
+    lg.add(slabMesh);
+    allInteractiveMeshes.push(slabMesh);
+
+    // Retaining Walls
+    const wh = lh - st, wy = lvl.topY - wh / 2;
+    const addWall = (geo, pos, isFront) => {
+      const w = new THREE.Mesh(geo, matBasementWall.clone());
+      w.position.copy(pos); w.castShadow = true; w.receiveShadow = true;
+      w.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo, 20), new THREE.LineBasicMaterial({ color: COLORS.basementEdge, opacity: 0.7, transparent: true })));
+      w.userData = { ...lvl, isBasement: true, element: 'wall' };
+      lg.add(w);
+      allInteractiveMeshes.push(w);
+      if (isFront) basementFrontWalls.push(w);
+    };
+
+    addWall(new THREE.BoxGeometry(bw, wh, wt), new THREE.Vector3(cx, wy, cz - bd / 2 + wt / 2), false); // North
+    addWall(new THREE.BoxGeometry(bw, wh, wt), new THREE.Vector3(cx, wy, cz + bd / 2 - wt / 2), true);  // South (Front)
+    addWall(new THREE.BoxGeometry(wt, wh, bd - 2 * wt), new THREE.Vector3(cx + bw / 2 - wt / 2, wy, cz), false); // East
+    addWall(new THREE.BoxGeometry(wt, wh, bd - 2 * wt), new THREE.Vector3(cx - bw / 2 + wt / 2, wy, cz), false); // West
+
+    basementLevelGroups.push(lg);
+    basementMasterGroup.add(lg);
+  });
+
+  scene.add(basementMasterGroup);
+}
+
+// =========================================================================
+// 2. COMPLETE TOWER HIERARCHY (GROUND + 14 RESIDENTIAL FLOORS)
+// =========================================================================
+
+async function loadAndBuildTower() {
+  let data = window.MODEL_DATA;
+  if (!data) {
+    const res = await fetch('model_data.json');
+    data = await res.json();
+  }
+
+  // Pre-generate and cache 2D shapes for all units and corridors
+  data.units.forEach(u => {
+    if (u.polygon.length >= 3) {
+      const shape = new THREE.Shape();
+      const p0 = pixelToWorld(u.polygon[0][0], u.polygon[0][1]);
+      shape.moveTo(p0.x, -p0.z);
+      for (let i = 1; i < u.polygon.length; i++) {
+        const pt = pixelToWorld(u.polygon[i][0], u.polygon[i][1]);
+        shape.lineTo(pt.x, -pt.z);
+      }
+      shape.closePath();
+      unitShapesCache[u.id] = shape;
+
+      // Extrude geometry cache
+      const geom = new THREE.ExtrudeGeometry(shape, {
+        steps: 1, depth: FLOOR_HEIGHT, bevelEnabled: showBevel,
+        bevelThickness: u.is_core ? 0.03 : 0.04, bevelSize: u.is_core ? 0.03 : 0.04, bevelSegments: 2
+      });
+      geom.computeVertexNormals();
+      unitGeomsCache[u.id] = geom;
+    }
+  });
+
+  // Pre-generate corridor shapes
+  if (data.corridors) {
+    data.corridors.forEach(c => {
+      const shape = new THREE.Shape();
+      const p0 = pixelToWorld(c.polygon[0][0], c.polygon[0][1]);
+      shape.moveTo(p0.x, -p0.z);
+      for (let i = 1; i < c.polygon.length; i++) {
+        const pt = pixelToWorld(c.polygon[i][0], c.polygon[i][1]);
+        shape.lineTo(pt.x, -pt.z);
+      }
+      shape.closePath();
+      corridorShapesCache.push({ shape, meta: c });
+    });
+  }
+
+  // 1. Build Ground Floor (0.0m to +3.2m)
+  buildGroundFloor(data);
+
+  // 2. Build Continuous Vertical Cores (Basement 3 to 14th Floor roof: -9.6m to +48.0m = 57.6m continuous shaft)
+  buildContinuousCores(data);
+
+  // 3. Build 14 Residential Floors (+3.2m to +48.0m)
+  buildResidentialFloors(data);
+}
+
+// Build Ground Floor Massing Level
+function buildGroundFloor(data) {
+  groundFloorGroup = new THREE.Group();
+  groundFloorGroup.name = "GroundFloor";
+  groundFloorGroup.position.y = 0.0;
+  groundFloorGroup.userData = { floorIndex: 0, floorName: "GROUND FLOOR", elevation: 0.0, targetExplodeY: 0.0 };
+
+  // Ground floor base slab
+  const slabGeo = new THREE.BoxGeometry(BASEMENT.width * 0.94, 0.4, BASEMENT.depth * 0.95);
+  const slabMesh = new THREE.Mesh(slabGeo, matGroundFloor.clone());
+  slabMesh.position.set(BASEMENT.centerX, 0.2, BASEMENT.centerZ);
+  slabMesh.castShadow = true; slabMesh.receiveShadow = true;
+  slabMesh.userData = { name: "GROUND FLOOR SLAB", isGround: true, elevation: "0.0 m" };
+  slabMesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(slabGeo, 20), new THREE.LineBasicMaterial({ color: COLORS.edgeGround, opacity: 0.75, transparent: true })));
+  groundFloorGroup.add(slabMesh);
+  allInteractiveMeshes.push(slabMesh);
+
+  // Ground floor entrance lobby & amenity masses matching first-floor envelope
+  data.units.forEach(u => {
+    if (!u.is_core && unitGeomsCache[u.id]) {
+      const geom = unitGeomsCache[u.id];
+      const meshMat = matGroundFloor.clone();
+      const mesh = new THREE.Mesh(geom, meshMat);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.y = 0.0;
+      mesh.castShadow = true; mesh.receiveShadow = true;
+      mesh.userData = { ...u, isGround: true, floor: 0, floorName: "GROUND FLOOR" };
+
+      const edgeLine = new THREE.LineSegments(
+        new THREE.EdgesGeometry(geom, 22),
+        new THREE.LineBasicMaterial({ color: COLORS.edgeGround, opacity: 0.65, transparent: true })
+      );
+      mesh.add(edgeLine);
+      mesh.userData.edgeLine = edgeLine;
+      groundFloorGroup.add(mesh);
+      allInteractiveMeshes.push(mesh);
+    }
+  });
+
+  scene.add(groundFloorGroup);
+}
+
+// Continuous Vertical Stair/Lift Cores (-9.6m to +48.0m continuous shaft)
+function buildContinuousCores(data) {
+  continuousCoresGroup = new THREE.Group();
+  continuousCoresGroup.name = "ContinuousCirculationCores";
+
+  const totalCoreHeight = 48.0 - (-9.6) + 0.8; // 58.4m total continuous shaft
+
+  data.units.forEach(u => {
+    if (u.is_core && unitShapesCache[u.id]) {
+      const shape = unitShapesCache[u.id];
+      const coreGeom = new THREE.ExtrudeGeometry(shape, {
+        steps: 1, depth: totalCoreHeight, bevelEnabled: false
+      });
+      coreGeom.computeVertexNormals();
+
+      const mesh = new THREE.Mesh(coreGeom, matCore.clone());
+      mesh.rotation.x = -Math.PI / 2;
+      // Start at basement base (-9.6m)
+      mesh.position.y = -9.6;
+      mesh.castShadow = true; mesh.receiveShadow = true;
+      mesh.userData = { ...u, isCore: true, isContinuousShaft: true, name: `${u.name} (CONTINUOUS CORE SHAFT)` };
+
+      const edgeLine = new THREE.LineSegments(
+        new THREE.EdgesGeometry(coreGeom, 20),
+        new THREE.LineBasicMaterial({ color: COLORS.edgeCore, opacity: 0.85, transparent: true })
+      );
+      mesh.add(edgeLine);
+      mesh.userData.edgeLine = edgeLine;
+
+      // Add horizontal floor-ring markers at every level for clear vertical scale
+      for (let y = -6.4; y <= 48.0; y += FLOOR_HEIGHT) {
+        const ringGeo = new THREE.BoxGeometry(0.1, 0.08, 0.1);
+        // Floor level indicators
+      }
+
+      continuousCoresGroup.add(mesh);
+      allInteractiveMeshes.push(mesh);
+    }
+  });
+
+  scene.add(continuousCoresGroup);
+}
+
+// Build 14 Residential Floors (+3.2m to +48.0m)
+function buildResidentialFloors(data) {
+  residentialFloorGroups = [];
+
+  for (let floorIdx = 1; floorIdx <= TOTAL_RESIDENTIAL_FLOORS; floorIdx++) {
+    const floorGroup = new THREE.Group();
+    const floorName = `${floorIdx}${getOrdinalSuffix(floorIdx)} FLOOR`;
+    const baseElev = floorIdx * FLOOR_HEIGHT; // 1st floor = 3.2m, 2nd = 6.4m, ..., 14th = 44.8m
+
+    floorGroup.name = `Floor_${floorIdx}`;
+    floorGroup.position.y = baseElev;
+    floorGroup.userData = {
+      floorIndex: floorIdx,
+      floorName: floorName,
+      baseElev: baseElev,
+      targetExplodeY: 0.0
+    };
+
+    // 1. Add all 26 apartment blocks for this floor
+    data.units.forEach(u => {
+      if (!u.is_core && unitGeomsCache[u.id]) {
+        const geom = unitGeomsCache[u.id];
+        const key = `${floorIdx}_${u.position}`;
+        const initialStatus = cachedInventoryState.get(key) || 'Available';
+        const initialColor = STATUS_COLORS[initialStatus] || STATUS_COLORS['Available'];
+        const meshMat = new THREE.MeshStandardMaterial({
+          color: initialColor,
+          roughness: 0.65,
+          metalness: 0.08
+        });
+        const mesh = new THREE.Mesh(geom, meshMat);
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.position.y = 0.0;
+        mesh.castShadow = true; mesh.receiveShadow = true;
+        mesh.userData = {
+          ...u,
+          floor: floorIdx,
+          position: u.position,
+          status: initialStatus,
+          statusColor: initialColor,
+          apartmentMaterial: meshMat,
+          isApartment: true,
+          floorName: floorName,
+          baseElev: baseElev
+        };
+
+        const edgeLine = new THREE.LineSegments(
+          new THREE.EdgesGeometry(geom, 22),
+          new THREE.LineBasicMaterial({ color: COLORS.edge, opacity: 0.75, transparent: true })
+        );
+        mesh.add(edgeLine);
+        mesh.userData.edgeLine = edgeLine;
+        floorGroup.add(mesh);
+        allInteractiveMeshes.push(mesh);
+
+        // Register in apartmentMeshMap for fast O(1) lookup
+        apartmentMeshMap.set(key, mesh);
+      }
+    });
+
+    // 2. Add corridor floor slabs for this floor
+    corridorShapesCache.forEach(c => {
+      const geom = new THREE.ExtrudeGeometry(c.shape, { steps: 1, depth: 0.03, bevelEnabled: false });
+      geom.computeVertexNormals();
+      const cMat = matCorridor.clone();
+      const mesh = new THREE.Mesh(geom, cMat);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.y = 0.015;
+      mesh.receiveShadow = true;
+      mesh.userData = { ...c.meta, isCorridor: true, floor: floorIdx };
+      mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(geom, 25), new THREE.LineBasicMaterial({ color: COLORS.edgeCorridor, opacity: 0.5, transparent: true })));
+      floorGroup.add(mesh);
+    });
+
+    // 3. Add floor elevation label badge
+    createFloorLevelBadge(floorGroup, floorIdx, floorName, baseElev);
+
+    scene.add(floorGroup);
+    residentialFloorGroups.push(floorGroup);
+  }
+
+  console.log(`Successfully built G+14 building hierarchy with ${residentialFloorGroups.length} residential floors!`);
+
+  // If inventory data was loaded before the meshes finished building, apply it now
+  if (pendingInventoryData && Array.isArray(pendingInventoryData) && pendingInventoryData.length > 0) {
+    const queued = pendingInventoryData;
+    pendingInventoryData = null;
+    applyInventoryUpdate(queued);
+  }
+}
+
+function getOrdinalSuffix(i) {
+  const j = i % 10, k = i % 100;
+  if (j === 1 && k !== 11) return "st";
+  if (j === 2 && k !== 12) return "nd";
+  if (j === 3 && k !== 13) return "rd";
+  return "th";
+}
+
+function createFloorLevelBadge(floorGroup, floorIdx, name, elevation) {
+  const badge = document.createElement('div');
+  badge.className = 'label-badge floor';
+  badge.textContent = `${floorIdx}F (+${elevation.toFixed(1)}m)`;
+  badge.style.display = 'none';
+  labelsContainer.appendChild(badge);
+
+  labelElements.push({
+    element: badge,
+    mesh: floorGroup,
+    isFloorBadge: true,
+    worldPos: new THREE.Vector3(BASEMENT.centerX - BASEMENT.width / 2 - 2.5, elevation + 1.6, BASEMENT.centerZ - BASEMENT.depth / 2)
+  });
+}
+
+function updateLabelsPosition() {
+  if (labelElements.length === 0) return;
+
+  const tempV = new THREE.Vector3();
+  const widthHalf = window.innerWidth / 2;
+  const heightHalf = window.innerHeight / 2;
+  const showLabels = document.getElementById('toggle-labels').checked;
+
+  labelElements.forEach(item => {
+    if (!showLabels) {
+      item.element.style.display = 'none';
+      return;
+    }
+
+    if (item.isFloorBadge) {
+      tempV.copy(item.worldPos);
+      tempV.y = item.mesh.position.y + 1.6;
+    } else {
+      item.element.style.display = 'none';
+      return;
+    }
+
+    tempV.project(camera);
+    if (tempV.z > 1) {
+      item.element.style.display = 'none';
+      return;
+    }
+
+    const x = (tempV.x * widthHalf) + widthHalf;
+    const y = -(tempV.y * heightHalf) + heightHalf;
+    item.element.style.left = `${x}px`;
+    item.element.style.top = `${y}px`;
+    item.element.style.display = 'block';
+  });
+}
+
+// =========================================================================
+// 3. FLOOR SELECTION, ISOLATION & EXPLODED VIEW CONTROLS
+// =========================================================================
+
+function buildFloorSelectorUI() {
+  const container = document.getElementById('floor-selector-container');
+  if (!container) return;
+  container.innerHTML = '';
+
+  // 1. "ALL FLOORS" button
+  const allBtn = document.createElement('button');
+  allBtn.className = 'floor-pill active floor-pill-wide';
+  allBtn.textContent = 'ALL FLOORS';
+  allBtn.id = 'btn-floor-all';
+  allBtn.addEventListener('click', () => selectFloorLevel(null));
+  container.appendChild(allBtn);
+
+  // 2. "GROUND" button
+  const gBtn = document.createElement('button');
+  gBtn.className = 'floor-pill ground floor-pill-wide';
+  gBtn.textContent = 'GROUND';
+  gBtn.id = 'btn-floor-ground';
+  gBtn.addEventListener('click', () => selectFloorLevel(0));
+  container.appendChild(gBtn);
+
+  // 3. Residential floors 1 through 14
+  for (let f = 1; f <= TOTAL_RESIDENTIAL_FLOORS; f++) {
+    const btn = document.createElement('button');
+    btn.className = 'floor-pill';
+    btn.textContent = `${f}`;
+    btn.id = `btn-floor-pill-${f}`;
+    btn.title = `Floor ${f}`;
+    if (f === 13 || f === 14) {
+      btn.style.gridColumn = 'span 2';
+    }
+    btn.addEventListener('click', () => selectFloorLevel(f));
+    container.appendChild(btn);
+  }
+}
+
+function selectFloorLevel(floorNumber) {
+  selectedFloorNumber = floorNumber;
+
+  // Update pills active state
+  document.querySelectorAll('.floor-pill').forEach(p => p.classList.remove('active'));
+  const badge = document.getElementById('active-floor-badge');
+
+  if (floorNumber === null) {
+    if (badge) badge.textContent = 'ALL FLOORS';
+    const b = document.getElementById('btn-floor-all');
+    if (b) b.classList.add('active');
+    applyFloorHighlighting(null);
+  } else if (floorNumber === 0) {
+    if (badge) badge.textContent = 'GROUND (0.0m)';
+    const b = document.getElementById('btn-floor-ground');
+    if (b) b.classList.add('active');
+    applyFloorHighlighting(0);
+  } else {
+    if (badge) badge.textContent = `${floorNumber}${getOrdinalSuffix(floorNumber)} FLOOR (+${(floorNumber * FLOOR_HEIGHT).toFixed(1)}m)`;
+    const btn = document.getElementById(`btn-floor-pill-${floorNumber}`);
+    if (btn) btn.classList.add('active');
+    applyFloorHighlighting(floorNumber);
+  }
+}
+
+function applyFloorHighlighting(activeFloor) {
+  const baseOpacity = Math.max(0.08, 1.0 - buildingTransparency);
+  const ghostOpacity = 0.15; // keep visible but slightly transparent
+
+  // Ground Floor
+  groundFloorGroup.traverse(child => {
+    if (child.isMesh && child.material) {
+      if (activeFloor === null || activeFloor === 0) {
+        child.material.transparent = buildingTransparency > 0.01;
+        child.material.opacity = baseOpacity;
+        if (child.userData.edgeLine) child.userData.edgeLine.material.opacity = 0.65;
+      } else {
+        child.material.transparent = true;
+        child.material.opacity = ghostOpacity;
+        if (child.userData.edgeLine) child.userData.edgeLine.material.opacity = 0.12;
+      }
+      child.material.needsUpdate = true;
+    }
+  });
+
+  // Residential Floors 1..14
+  residentialFloorGroups.forEach((fg, idx) => {
+    const fNum = idx + 1;
+    const isTarget = (activeFloor === null || activeFloor === fNum);
+
+    fg.traverse(child => {
+      if (child.isMesh && child.material) {
+        if (isTarget) {
+          child.material.transparent = buildingTransparency > 0.01;
+          child.material.opacity = baseOpacity;
+          if (child.userData.edgeLine) child.userData.edgeLine.material.opacity = 0.75;
+        } else {
+          child.material.transparent = true;
+          child.material.opacity = ghostOpacity;
+          if (child.userData.edgeLine) child.userData.edgeLine.material.opacity = 0.12;
+        }
+        child.material.needsUpdate = true;
+      }
+    });
+  });
+
+  // Continuous Cores
+  continuousCoresGroup.traverse(child => {
+    if (child.isMesh && child.material) {
+      if (activeFloor === null) {
+        child.material.transparent = buildingTransparency > 0.01;
+        child.material.opacity = baseOpacity;
+        if (child.userData.edgeLine) child.userData.edgeLine.material.opacity = 0.85;
+      } else {
+        child.material.transparent = true;
+        child.material.opacity = 0.22;
+        if (child.userData.edgeLine) child.userData.edgeLine.material.opacity = 0.15;
+      }
+      child.material.needsUpdate = true;
+    }
+  });
+
+  // Basements
+  basementMasterGroup.traverse(child => {
+    if (child.isMesh && child.material) {
+      if (activeFloor === null) {
+        child.material.transparent = buildingTransparency > 0.01;
+        child.material.opacity = baseOpacity;
+      } else {
+        child.material.transparent = true;
+        child.material.opacity = ghostOpacity;
+      }
+      child.material.needsUpdate = true;
+    }
+  });
+}
+
+function setExplodedFloors(exploded) {
+  isFloorsExploded = exploded;
+  const btn = document.getElementById('btn-exploded-floors');
+  if (btn) btn.classList.toggle('active', exploded);
+
+  // Animate residential floors vertically apart
+  residentialFloorGroups.forEach((fg, idx) => {
+    // Each floor moves up by an additional offset (+1.0m per level)
+    fg.userData.targetExplodeY = exploded ? idx * 1.1 : 0.0;
+  });
+}
+
+function setBuildingTransparency(val) {
+  buildingTransparency = val / 100;
+  applyFloorHighlighting(selectedFloorNumber);
+}
+
+function setSectionCut(enabled, cutZ = 0) {
+  isSectionCutActive = enabled;
+  sectionCutPlaneZ = cutZ;
+
+  sectionClippingPlane.constant = cutZ;
+
+  // Apply clipping plane to all meshes
+  const planes = enabled ? [sectionClippingPlane] : [];
+  [groundFloorGroup, ...residentialFloorGroups, continuousCoresGroup, basementMasterGroup].forEach(grp => {
+    grp.traverse(child => {
+      if (child.isMesh) {
+        child.material.clippingPlanes = planes;
+        child.material.clipShadows = true;
+      }
+    });
+  });
+}
+
+function transitionCameraTo(viewKey) {
+  const view = VIEWS[viewKey];
+  if (!view) return;
+
+  targetCameraPos.copy(view.pos);
+  targetControlsTarget.copy(view.target);
+  targetCameraUp.copy(view.up);
+  isCameraAnimating = true;
+
+  document.querySelectorAll('.top-toolbar .tool-btn').forEach(btn => btn.classList.remove('active'));
+  const activeBtn = document.getElementById(`btn-view-${viewKey}`);
+  if (activeBtn) activeBtn.classList.add('active');
+}
+
+// --- EVENT LISTENERS & UI WIRING ---
+function initEventListeners() {
+  window.addEventListener('resize', onWindowResize);
+  renderer.domElement.addEventListener('pointermove', onPointerMove);
+  renderer.domElement.addEventListener('pointerdown', onPointerDown);
+
+  // Top Viewport Buttons
+  document.getElementById('btn-view-iso').addEventListener('click', () => transitionCameraTo('isometric'));
+  document.getElementById('btn-view-top').addEventListener('click', () => transitionCameraTo('top'));
+  document.getElementById('btn-view-front').addEventListener('click', () => transitionCameraTo('front'));
+  document.getElementById('btn-view-side').addEventListener('click', () => transitionCameraTo('side'));
+  document.getElementById('btn-view-reset').addEventListener('click', () => transitionCameraTo('isometric'));
+
+  document.getElementById('btn-view-section').addEventListener('click', () => {
+    // Enable section cut and switch to section view
+    const toggle = document.getElementById('toggle-section-cut');
+    toggle.checked = true;
+    document.getElementById('section-slider-wrapper').style.display = 'block';
+    setSectionCut(true, 0);
+    transitionCameraTo('section');
+  });
+
+  document.getElementById('btn-view-basement').addEventListener('click', () => {
+    showBasements = true;
+    document.getElementById('toggle-basement').checked = true;
+    basementMasterGroup.visible = true;
+    transitionCameraTo('basement');
+  });
+
+  // Panel toggle
+  const panel = document.getElementById('control-panel');
+  document.getElementById('btn-toggle-panel').addEventListener('click', () => panel.classList.toggle('collapsed'));
+  document.getElementById('btn-close-panel').addEventListener('click', () => panel.classList.add('collapsed'));
+
+  // Exploded Floors & Normal View
+  document.getElementById('btn-exploded-floors').addEventListener('click', () => setExplodedFloors(true));
+  document.getElementById('btn-normal-floors').addEventListener('click', () => setExplodedFloors(false));
+
+  document.getElementById('btn-show-all-floors').addEventListener('click', () => {
+    selectFloorLevel(null);
+    residentialFloorGroups.forEach(fg => fg.visible = true);
+    groundFloorGroup.visible = true;
+  });
+
+  document.getElementById('btn-hide-residential').addEventListener('click', () => {
+    residentialFloorGroups.forEach(fg => fg.visible = false);
+  });
+
+  // Building Transparency Slider
+  const sliderBldgOpacity = document.getElementById('slider-bldg-opacity');
+  const valBldgOpacity = document.getElementById('val-bldg-opacity');
+  sliderBldgOpacity.addEventListener('input', e => {
+    const val = parseInt(e.target.value);
+    valBldgOpacity.textContent = `${val}%`;
+    setBuildingTransparency(val);
+  });
+
+  // Section Cutaway Toggle & Slider
+  const toggleSection = document.getElementById('toggle-section-cut');
+  const sliderSection = document.getElementById('slider-section-cut');
+  const valSection = document.getElementById('val-section-cut');
+  const sectionWrapper = document.getElementById('section-slider-wrapper');
+
+  toggleSection.addEventListener('change', e => {
+    const on = e.target.checked;
+    sectionWrapper.style.display = on ? 'block' : 'none';
+    setSectionCut(on, parseFloat(sliderSection.value));
+  });
+
+  sliderSection.addEventListener('input', e => {
+    const val = parseFloat(e.target.value);
+    valSection.textContent = `${val.toFixed(0)} m`;
+    setSectionCut(true, val);
+  });
+
+  // Basement Controls
+  document.getElementById('toggle-basement').addEventListener('change', e => {
+    showBasements = e.target.checked;
+    basementMasterGroup.visible = showBasements;
+  });
+
+  document.getElementById('btn-exploded-basement').addEventListener('click', () => {
+    isBasementExploded = !isBasementExploded;
+    document.getElementById('btn-exploded-basement').classList.toggle('active', isBasementExploded);
+    basementLevelGroups[0].userData.targetExplodeY = 0.0;
+    basementLevelGroups[1].userData.targetExplodeY = isBasementExploded ? -2.8 : 0.0;
+    basementLevelGroups[2].userData.targetExplodeY = isBasementExploded ? -5.6 : 0.0;
+  });
+
+  document.getElementById('btn-cutaway-basement').addEventListener('click', () => {
+    isBasementCutaway = !isBasementCutaway;
+    document.getElementById('btn-cutaway-basement').classList.toggle('active', isBasementCutaway);
+    basementFrontWalls.forEach(w => {
+      w.material.transparent = isBasementCutaway;
+      w.material.opacity = isBasementCutaway ? 0.15 : 1.0;
+    });
+  });
+
+  // Element Toggles
+  document.getElementById('toggle-cores').addEventListener('change', e => continuousCoresGroup.visible = e.target.checked);
+  document.getElementById('toggle-ground-floor').addEventListener('change', e => groundFloorGroup.visible = e.target.checked);
+  document.getElementById('toggle-corridors').addEventListener('change', e => {
+    const show = e.target.checked;
+    residentialFloorGroups.forEach(fg => {
+      fg.traverse(c => { if (c.userData && c.userData.isCorridor) c.visible = show; });
+    });
+  });
+  document.getElementById('toggle-labels').addEventListener('change', updateLabelsPosition);
+
+  document.getElementById('toggle-edges').addEventListener('change', e => {
+    showEdges = e.target.checked;
+    [groundFloorGroup, ...residentialFloorGroups, continuousCoresGroup].forEach(grp => {
+      grp.traverse(c => { if (c.userData && c.userData.edgeLine) c.userData.edgeLine.visible = showEdges; });
+    });
+  });
+
+  // Render Modes
+  document.getElementById('btn-mode-solid').addEventListener('click', () => setRenderStyle('solid'));
+  document.getElementById('btn-mode-wireframe').addEventListener('click', () => setRenderStyle('wireframe'));
+  document.getElementById('btn-mode-clay').addEventListener('click', () => setRenderStyle('clay'));
+
+  function setRenderStyle(m) {
+    currentRenderMode = m;
+    ['solid','wireframe','clay'].forEach(k => document.getElementById(`btn-mode-${k}`).classList.toggle('active', k === m));
+    residentialFloorGroups.forEach(fg => {
+      fg.traverse(mesh => {
+        if (mesh.isMesh && mesh.userData && !mesh.userData.isCorridor) {
+          if (m === 'wireframe') {
+            mesh.material = matWireframe;
+          } else if (m === 'clay') {
+            mesh.material = matClay;
+          } else {
+            // Restore apartment material with live status color in solid mode
+            if (mesh.userData.isApartment) {
+              const statusColor = mesh.userData.statusColor || STATUS_COLORS[mesh.userData.status] || STATUS_COLORS['Available'];
+              mesh.material = mesh.userData.apartmentMaterial || new THREE.MeshStandardMaterial({
+                color: statusColor,
+                roughness: 0.65,
+                metalness: 0.08
+              });
+              mesh.material.color.setHex(statusColor);
+            } else {
+              mesh.material = matApartment;
+            }
+          }
+        }
+      });
+    });
+    applyFloorHighlighting(selectedFloorNumber);
+  }
+}
+
+// =========================================================================
+// 4. LIVE GOOGLE SHEETS INVENTORY CONTROLLER
+// =========================================================================
+
+function normalizeStatus(s) {
+  if (!s || typeof s !== 'string') return 'N/A';
+  const clean = s.trim().toLowerCase();
+  if (clean === 'available') return 'Available';
+  if (clean === 'booked') return 'Booked';
+  if (clean === 'hold') return 'Hold';
+  if (clean === 'registered') return 'Registered';
+  if (clean === 'sold') return 'Sold';
+  if (clean === 'n/a' || clean === 'na' || clean === 'not available') return 'N/A';
+  return s.trim().charAt(0).toUpperCase() + s.trim().slice(1);
+}
+
+async function fetchInventoryData() {
+  if (isFetchingInventory) return;
+  isFetchingInventory = true;
+  updateSyncStatusUI('fetching');
+
+  try {
+    const sep = inventoryApiUrl.includes('?') ? '&' : '?';
+    const url = `${inventoryApiUrl}${sep}_t=${Date.now()}`;
+    const response = await fetch(url, {
+      method: 'GET'
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} ${response.statusText}`);
+    }
+
+    const payload = await response.json();
+    const data = Array.isArray(payload) ? payload : (payload.value || payload.data || payload.inventory || payload.records || []);
+    if (Array.isArray(data) && data.length > 0) {
+      applyInventoryUpdate(data);
+      lastSyncDate = new Date();
+      updateSyncStatusUI('success');
+    } else {
+      console.warn('API returned non-array or empty payload:', payload);
+      updateSyncStatusUI('warning');
+    }
+  } catch (err) {
+    console.error('Failed to fetch inventory feed:', err);
+    updateSyncStatusUI('error');
+  } finally {
+    isFetchingInventory = false;
+  }
+}
+
+function applyInventoryUpdate(data) {
+  if (!Array.isArray(data) || data.length === 0) return;
+
+  // If apartment meshes are not ready yet, retain data and apply when ready
+  if (apartmentMeshMap.size === 0) {
+    pendingInventoryData = data;
+  }
+
+  let changedCount = 0;
+  const counts = {
+    total: 0,
+    available: 0,
+    booked: 0,
+    hold: 0,
+    registered: 0,
+    sold: 0,
+    na: 0
+  };
+
+  data.forEach(item => {
+    // Robust key retrieval handling any casing and column naming conventions
+    const rawFloor = item.floor ?? item.Floor ?? item.FLOOR ?? item.floor_no ?? item['Floor No'] ?? item['Floor Number'];
+    const rawPos = item.position ?? item.Position ?? item.POSITION ?? item.flat ?? item.Flat ?? item.FLAT ?? item.unit ?? item.Unit ?? item.pos ?? item.Pos ?? item['Flat No'] ?? item['Unit No'];
+    const rawStatus = item.status ?? item.Status ?? item.STATUS ?? item.state ?? item.State ?? item.BookingStatus ?? item['Booking Status'];
+
+    const floor = Number(rawFloor);
+    const pos = Number(rawPos);
+    if (!floor || !pos) return;
+
+    counts.total++;
+    const status = normalizeStatus(rawStatus);
+    const key = `${floor}_${pos}`;
+
+    switch (status) {
+      case 'Available': counts.available++; break;
+      case 'Booked': counts.booked++; break;
+      case 'Hold': counts.hold++; break;
+      case 'Registered': counts.registered++; break;
+      case 'Sold': counts.sold++; break;
+      default: counts.na++; break;
+    }
+
+    const prevStatus = cachedInventoryState.get(key);
+    cachedInventoryState.set(key, status);
+
+    const mesh = apartmentMeshMap.get(key);
+    if (mesh && mesh.userData && mesh.userData.isApartment) {
+      const colorHex = STATUS_COLORS[status] || STATUS_COLORS['N/A'];
+      const needsMeshUpdate =
+        prevStatus !== status ||
+        mesh.userData.status !== status ||
+        mesh.userData.statusColor !== colorHex ||
+        (currentRenderMode === 'solid' && mesh.material && mesh.material.color.getHex() !== colorHex);
+
+      if (needsMeshUpdate) {
+        mesh.userData.status = status;
+        mesh.userData.statusColor = colorHex;
+
+        if (mesh.userData.apartmentMaterial) {
+          mesh.userData.apartmentMaterial.color.setHex(colorHex);
+          mesh.userData.apartmentMaterial.needsUpdate = true;
+        }
+
+        // Update active material color of the affected apartment mesh
+        if (currentRenderMode === 'solid' && mesh.material) {
+          mesh.material.color.setHex(colorHex);
+          mesh.material.needsUpdate = true;
+        }
+        changedCount++;
+
+        // Live update active inspector card if this flat is selected
+        if (selectedMesh === mesh) {
+          updateSelectedMeshCard(mesh);
+        }
+      }
+    }
+  });
+
+  currentSummaryCounts = counts;
+  updateInventorySummaryUI(counts, changedCount);
+
+  if (changedCount > 0 && renderer && scene && camera) {
+    renderer.render(scene, camera);
+  }
+}
+
+function updateInventorySummaryUI(counts, changedCount) {
+  const elTotal = document.getElementById('count-total');
+  const elAvail = document.getElementById('count-available');
+  const elBooked = document.getElementById('count-booked');
+  const elHold = document.getElementById('count-hold');
+  const elReg = document.getElementById('count-registered');
+  const elSold = document.getElementById('count-sold');
+  const elNa = document.getElementById('count-na');
+
+  if (elTotal) elTotal.textContent = counts.total;
+  if (elAvail) elAvail.textContent = counts.available;
+  if (elBooked) elBooked.textContent = counts.booked;
+  if (elHold) elHold.textContent = counts.hold;
+  if (elReg) elReg.textContent = counts.registered;
+  if (elSold) elSold.textContent = counts.sold;
+  if (elNa) elNa.textContent = counts.na;
+
+  const bottomFeed = document.getElementById('bottom-bar-inventory');
+  if (bottomFeed) {
+    bottomFeed.textContent = `${counts.available} Avail | ${counts.booked} Booked | ${counts.sold} Sold`;
+  }
+}
+
+function updateSyncStatusUI(status) {
+  const badge = document.getElementById('sync-status-badge');
+  const dot = document.getElementById('sync-status-dot');
+  const lastSyncEl = document.getElementById('feed-last-updated');
+  const refreshBtn = document.getElementById('btn-refresh-feed');
+
+  if (status === 'fetching') {
+    if (badge) {
+      badge.textContent = 'Syncing...';
+      badge.className = 'sync-pill syncing';
+    }
+    if (dot) dot.className = 'live-dot syncing';
+    if (refreshBtn) refreshBtn.classList.add('spinning');
+  } else if (status === 'success') {
+    if (badge) {
+      badge.textContent = 'Connected';
+      badge.className = 'sync-pill';
+    }
+    if (dot) dot.className = 'live-dot';
+    if (refreshBtn) refreshBtn.classList.remove('spinning');
+    if (lastSyncEl && lastSyncDate) {
+      const timeStr = lastSyncDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const secText = Math.round(inventoryPollIntervalMs / 1000);
+      lastSyncEl.textContent = `Live Feed Active • Last synced ${timeStr} (every ${secText}s)`;
+    }
+  } else if (status === 'error') {
+    if (badge) {
+      badge.textContent = 'Sync Error';
+      badge.className = 'sync-pill error';
+    }
+    if (dot) dot.className = 'live-dot error';
+    if (refreshBtn) refreshBtn.classList.remove('spinning');
+    if (lastSyncEl) {
+      lastSyncEl.textContent = 'Feed offline (cached inventory shown)';
+    }
+  } else if (status === 'warning') {
+    if (badge) {
+      badge.textContent = 'Warning';
+      badge.className = 'sync-pill error';
+    }
+    if (dot) dot.className = 'live-dot error';
+    if (refreshBtn) refreshBtn.classList.remove('spinning');
+  }
+}
+
+function setupFeedConfigModal() {
+  const btnConfig = document.getElementById('btn-config-feed');
+  const panelConfig = document.getElementById('feed-config-panel');
+  const btnClose = document.getElementById('btn-close-config');
+  const inputUrl = document.getElementById('input-feed-url');
+  const selectRate = document.getElementById('select-poll-rate');
+  const btnSave = document.getElementById('btn-save-feed-config');
+  const btnReset = document.getElementById('btn-reset-feed-config');
+
+  if (!btnConfig || !panelConfig) return;
+
+  btnConfig.addEventListener('click', () => {
+    const isVisible = panelConfig.style.display !== 'none';
+    if (isVisible) {
+      panelConfig.style.display = 'none';
+    } else {
+      if (inputUrl) inputUrl.value = inventoryApiUrl;
+      if (selectRate) selectRate.value = String(inventoryPollIntervalMs);
+      panelConfig.style.display = 'block';
+    }
+  });
+
+  if (btnClose) {
+    btnClose.addEventListener('click', () => {
+      panelConfig.style.display = 'none';
+    });
+  }
+
+  if (btnSave) {
+    btnSave.addEventListener('click', () => {
+      if (inputUrl && inputUrl.value.trim()) {
+        inventoryApiUrl = inputUrl.value.trim();
+        localStorage.setItem(STORAGE_URL_KEY, inventoryApiUrl);
+      }
+      if (selectRate && selectRate.value) {
+        inventoryPollIntervalMs = parseInt(selectRate.value, 10);
+        localStorage.setItem(STORAGE_POLL_KEY, String(inventoryPollIntervalMs));
+      }
+      panelConfig.style.display = 'none';
+      startInventoryPolling();
+      fetchInventoryData();
+    });
+  }
+
+  if (btnReset) {
+    btnReset.addEventListener('click', () => {
+      localStorage.removeItem(STORAGE_URL_KEY);
+      localStorage.removeItem(STORAGE_POLL_KEY);
+      localStorage.removeItem('inventory_api_url');
+      localStorage.removeItem('inventory_poll_interval_ms');
+      inventoryApiUrl = DEFAULT_INVENTORY_API_URL;
+      inventoryPollIntervalMs = INVENTORY_POLL_INTERVAL_MS;
+      if (inputUrl) inputUrl.value = inventoryApiUrl;
+      if (selectRate) selectRate.value = String(INVENTORY_POLL_INTERVAL_MS);
+      panelConfig.style.display = 'none';
+      startInventoryPolling();
+      fetchInventoryData();
+    });
+  }
+}
+
+function startInventoryPolling() {
+  if (inventoryPollTimer) clearInterval(inventoryPollTimer);
+  inventoryPollTimer = setInterval(fetchInventoryData, inventoryPollIntervalMs);
+}
+
+function initInventoryFeed() {
+  const btnRefresh = document.getElementById('btn-refresh-feed');
+  if (btnRefresh) {
+    btnRefresh.addEventListener('click', () => {
+      fetchInventoryData();
+    });
+  }
+
+  setupFeedConfigModal();
+
+  // Initial fetch on website load
+  fetchInventoryData();
+
+  // Automatic live refresh every 30 seconds
+  startInventoryPolling();
+}
+
+function onWindowResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  updateLabelsPosition();
+}
+
+function onPointerMove(e) {
+  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(allInteractiveMeshes);
+
+  if (hits.length > 0) {
+    const hit = hits[0].object;
+    if (hoveredMesh !== hit) {
+      if (hoveredMesh && hoveredMesh !== selectedMesh) hoveredMesh.material.emissive.setHex(0x000000);
+      hoveredMesh = hit;
+      if (hoveredMesh !== selectedMesh) hoveredMesh.material.emissive.setHex(COLORS.hoverEmissive);
+      container.style.cursor = 'pointer';
+    }
+    tooltip.style.display = 'block';
+    tooltip.style.left = `${e.clientX + 14}px`;
+    tooltip.style.top = `${e.clientY + 14}px`;
+    const u = hit.userData;
+
+    if (u.isApartment) {
+      const status = u.status || 'Available';
+      const statusColor = STATUS_HEX[status] || '#22c55e';
+      tooltip.innerHTML = `
+        <div style="font-weight:700; font-size:12px; margin-bottom:2px; letter-spacing:0.2px;">FLAT POSITION ${u.position}</div>
+        <div style="font-size:11px; color:#cbd5e1; margin-bottom:4px;">${u.floor}${getOrdinalSuffix(u.floor)} FLOOR</div>
+        <div style="font-size:11px; display:flex; align-items:center; gap:5px; font-weight:600;">
+          <span style="width:7px; height:7px; border-radius:50%; background:${statusColor}; display:inline-block;"></span>
+          <span style="color:${statusColor};">STATUS: ${status.toUpperCase()}</span>
+        </div>
+      `;
+    } else {
+      tooltip.innerHTML = `<strong>${u.name || 'BUILDING BLOCK'}</strong><br><span style="color:#aaa;">${u.floorName || u.type || 'Structure'}</span>`;
+    }
+  } else {
+    if (hoveredMesh && hoveredMesh !== selectedMesh) hoveredMesh.material.emissive.setHex(0x000000);
+    hoveredMesh = null;
+    tooltip.style.display = 'none';
+    container.style.cursor = 'default';
+  }
+}
+
+function onPointerDown(e) {
+  if (e.button !== 0) return;
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(allInteractiveMeshes);
+
+  if (hits.length > 0) {
+    const hit = hits[0].object;
+    if (selectedMesh) selectedMesh.material.emissive.setHex(0x000000);
+    selectedMesh = hit;
+    selectedMesh.material.emissive.setHex(COLORS.selectEmissive);
+
+    updateSelectedMeshCard(hit);
+  }
+}
+
+function updateSelectedMeshCard(hit) {
+  const u = hit.userData;
+  const cardName = document.getElementById('card-unit-name');
+  const cardType = document.getElementById('card-unit-type');
+  const cardStatusBanner = document.getElementById('card-status-banner');
+  const cardStatusDot = document.getElementById('card-status-dot');
+  const cardStatusText = document.getElementById('card-status-text');
+
+  const cardFloor = document.getElementById('card-unit-floor');
+  const cardPos = document.getElementById('card-unit-pos');
+  const cardStatus = document.getElementById('card-unit-status');
+  const cardBhk = document.getElementById('card-unit-bhk');
+  const cardArea = document.getElementById('card-unit-area');
+  const cardElev = document.getElementById('card-unit-elevation');
+
+  if (u.isApartment) {
+    const status = u.status || 'Available';
+    const statusColor = STATUS_HEX[status] || '#22c55e';
+
+    if (cardName) cardName.textContent = `FLAT POSITION ${u.position}`;
+    if (cardType) cardType.textContent = `${u.floor}${getOrdinalSuffix(u.floor)} FLOOR`;
+
+    if (cardStatusBanner) {
+      cardStatusBanner.style.display = 'flex';
+      cardStatusBanner.style.backgroundColor = `${statusColor}18`;
+      cardStatusBanner.style.borderColor = `${statusColor}66`;
+      cardStatusBanner.style.color = statusColor;
+    }
+    if (cardStatusDot) {
+      cardStatusDot.style.backgroundColor = statusColor;
+      cardStatusDot.style.boxShadow = `0 0 6px ${statusColor}`;
+    }
+    if (cardStatusText) {
+      cardStatusText.textContent = `STATUS: ${status.toUpperCase()}`;
+    }
+
+    if (cardFloor) cardFloor.textContent = `${u.floor}`;
+    if (cardPos) cardPos.textContent = `${u.position}`;
+    if (cardStatus) {
+      cardStatus.textContent = `${status}`;
+      cardStatus.style.color = statusColor;
+      cardStatus.style.fontWeight = '700';
+    }
+    if (cardBhk) cardBhk.textContent = `${u.name} (${u.type || 'Residential'})`;
+    if (cardArea) cardArea.textContent = u.area ? `${u.area.toFixed(2)} sq.ft.` : '--';
+    if (cardElev) cardElev.textContent = `+${(u.floor * FLOOR_HEIGHT).toFixed(1)} m`;
+
+  } else {
+    // Non-apartment (Core, Basement, Ground Floor)
+    if (cardName) cardName.textContent = u.name || 'BUILDING STRUCTURE';
+    if (cardType) cardType.textContent = u.floorName || (u.isCore ? 'CORE SHAFT' : (u.isBasement ? 'BASEMENT LEVEL' : 'GROUND MASS'));
+    if (cardStatusBanner) cardStatusBanner.style.display = 'none';
+
+    if (cardFloor) cardFloor.textContent = u.floor !== undefined ? `${u.floor}` : '--';
+    if (cardPos) cardPos.textContent = '--';
+    if (cardStatus) {
+      cardStatus.textContent = u.isCore ? 'Circulation Core' : 'Structural Base';
+      cardStatus.style.color = 'var(--text-secondary)';
+      cardStatus.style.fontWeight = '500';
+    }
+    if (cardBhk) cardBhk.textContent = u.type || (u.isCore ? 'Continuous Shaft' : 'Building Mass');
+    if (cardArea) cardArea.textContent = u.area ? `${u.area.toFixed(2)} sq.ft.` : 'Common Facility';
+    if (cardElev) cardElev.textContent = u.elev || (u.floor !== undefined ? `+${(u.floor * FLOOR_HEIGHT).toFixed(1)} m` : '--');
+  }
+}
+
+// --- ANIMATION LOOP ---
+function animate() {
+  requestAnimationFrame(animate);
+
+  // Smooth camera interpolation
+  if (isCameraAnimating) {
+    camera.position.lerp(targetCameraPos, 0.08);
+    controls.target.lerp(targetControlsTarget, 0.08);
+    camera.up.lerp(targetCameraUp, 0.08);
+    if (camera.position.distanceTo(targetCameraPos) < 0.05 && controls.target.distanceTo(targetControlsTarget) < 0.05) {
+      camera.position.copy(targetCameraPos);
+      controls.target.copy(targetControlsTarget);
+      camera.up.copy(targetCameraUp);
+      isCameraAnimating = false;
+    }
+  }
+
+  // Smooth exploded floors vertical animation
+  residentialFloorGroups.forEach(fg => {
+    const targetY = fg.userData.baseElev + (fg.userData.targetExplodeY || 0.0);
+    fg.position.y = THREE.MathUtils.lerp(fg.position.y, targetY, 0.08);
+  });
+
+  // Smooth exploded basement vertical animation
+  basementLevelGroups.forEach(g => {
+    const targetY = g.userData.targetExplodeY || 0.0;
+    g.position.y = THREE.MathUtils.lerp(g.position.y, targetY, 0.08);
+  });
+
+  controls.update();
+  updateLabelsPosition();
+  renderer.render(scene, camera);
+}
+
+// Launch
+init();
+
+  </script>
+</body>
+</html>

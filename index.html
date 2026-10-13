@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complete Building Massing Model | Ground + 14 Floors & 3-Level Basement</title>
+  <link rel="stylesheet" href="styles.css?v=20261013">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231e3a8a'%3E%3Cpath d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/%3E%3C/svg%3E">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three.module.js",
+      "three/addons/controls/OrbitControls.js": "./vendor/OrbitControls.js",
+      "three/addons/": "./vendor/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <!-- 3D WebGL Canvas Container -->
+  <div id="canvas-container"></div>
+  <div id="labels-container" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none; z-index: 5; overflow: hidden;"></div>
+  <div id="hover-tooltip"></div>
+
+  <!-- Header Bar -->
+  <header class="top-header">
+    <div class="logo-badge">
+      <div class="logo-icon">G+14<br>B3</div>
+      <div class="title-group">
+        <h1>COMPLETE 3D BUILDING MASSING MODEL</h1>
+        <p>Ground + 14 Residential Floors (+48.0m) & 3-Level Basement (-9.6m)</p>
+      </div>
+    </div>
+    <div class="status-pill">
+      <span class="status-dot"></span>
+      <span>18 Vertical Levels &bull; 364 Apartments &bull; 5 Continuous Cores</span>
+    </div>
+  </header>
+
+  <!-- Top Right Camera Viewport Toolbar -->
+  <nav class="top-toolbar">
+    <button class="tool-btn active" id="btn-view-iso" title="High Architectural Isometric View">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      <span>Isometric</span>
+    </button>
+    <button class="tool-btn" id="btn-view-top" title="Top Plan View (North Up)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
+      <span>Top (Plan)</span>
+    </button>
+    <button class="tool-btn" id="btn-view-front" title="Front Elevation (South Elevation)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M3 8l9-5 9 5"/></svg>
+      <span>Front</span>
+    </button>
+    <button class="tool-btn" id="btn-view-side" title="Side Elevation (East Elevation)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/></svg>
+      <span>Side</span>
+    </button>
+    <button class="tool-btn" id="btn-view-section" title="Section / Cutaway View">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="2" x2="12" y2="22"/><path d="M12 2a10 10 0 0 1 0 20z" fill="currentColor"/></svg>
+      <span>Section</span>
+    </button>
+    <button class="tool-btn" id="btn-view-basement" title="Substructure & Basements View">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      <span>Basements</span>
+    </button>
+    <button class="tool-btn" id="btn-view-reset" title="Reset Camera View">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+      <span>Reset</span>
+    </button>
+  </nav>
+
+  <!-- Live Google Sheets Inventory Feed & Status Legend Panel -->
+  <aside class="inventory-card" id="inventory-card">
+    <div class="inventory-card-header">
+      <div class="live-title-group">
+        <span class="live-dot" id="sync-status-dot"></span>
+        <span class="live-heading">LIVE INVENTORY FEED</span>
+      </div>
+      <div class="live-actions">
+        <span class="sync-pill" id="sync-status-badge">Connecting...</span>
+        <button class="icon-btn-small" id="btn-refresh-feed" title="Refresh Live Inventory Now">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </button>
+        <button class="icon-btn-small" id="btn-config-feed" title="Configure Live Google Sheet Feed">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Feed Configuration Panel -->
+    <div class="feed-config-panel" id="feed-config-panel" style="display: none;">
+      <div class="feed-config-header">
+        <span>Google Sheets Feed Config</span>
+        <button class="config-close-btn" id="btn-close-config" title="Close">&times;</button>
+      </div>
+      <div class="feed-config-body">
+        <label for="input-feed-url">API Endpoint URL:</label>
+        <input type="text" id="input-feed-url" placeholder="https://script.google.com/macros/s/AKfycbx9_AbznKZDe8QzBz0wzsyvYBSf-nlJUig1FzbZwG6uDed2jw9G59xtiKKM2x4aANSf/exec" />
+        
+        <label for="select-poll-rate">Auto-Refresh Rate:</label>
+        <select id="select-poll-rate">
+          <option value="30000" selected>Every 30 Seconds (Standard)</option>
+          <option value="10000">Every 10 Seconds</option>
+          <option value="5000">Every 5 Seconds (Fast)</option>
+          <option value="3000">Every 3 Seconds (Ultra Fast)</option>
+        </select>
+        
+        <div class="feed-config-buttons">
+          <button id="btn-save-feed-config" class="primary-btn">Save & Sync</button>
+          <button id="btn-reset-feed-config" class="secondary-btn">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dynamic Inventory Summary -->
+    <div class="inventory-summary-section">
+      <div class="summary-total-row">
+        <span>Total Flats:</span>
+        <strong id="count-total">364</strong>
+      </div>
+      <div class="summary-metrics-grid">
+        <div class="stat-pill status-available">
+          <span class="color-badge color-available"></span>
+          <span class="stat-label">Available:</span>
+          <span class="stat-num" id="count-available">--</span>
+        </div>
+        <div class="stat-pill status-booked">
+          <span class="color-badge color-booked"></span>
+          <span class="stat-label">Booked:</span>
+          <span class="stat-num" id="count-booked">--</span>
+        </div>
+        <div class="stat-pill status-hold">
+          <span class="color-badge color-hold"></span>
+          <span class="stat-label">Hold:</span>
+          <span class="stat-num" id="count-hold">--</span>
+        </div>
+        <div class="stat-pill status-registered">
+          <span class="color-badge color-registered"></span>
+          <span class="stat-label">Registered:</span>
+          <span class="stat-num" id="count-registered">--</span>
+        </div>
+        <div class="stat-pill status-sold">
+          <span class="color-badge color-sold"></span>
+          <span class="stat-label">Sold:</span>
+          <span class="stat-num" id="count-sold">--</span>
+        </div>
+        <div class="stat-pill status-na">
+          <span class="color-badge color-na"></span>
+          <span class="stat-label">N/A:</span>
+          <span class="stat-num" id="count-na">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inventory Status Color Legend -->
+    <div class="inventory-legend-section">
+      <div class="legend-header-title">STATUS COLOR LEGEND</div>
+      <div class="legend-items-list">
+        <div class="legend-entry">
+          <span class="color-badge color-available"></span>
+          <span class="legend-text"><strong>GREEN</strong> = Available</span>
+        </div>
+        <div class="legend-entry">
+          <span class="color-badge color-booked"></span>
+          <span class="legend-text"><strong>RED</strong> = Booked</span>
+        </div>
+        <div class="legend-entry">
+          <span class="color-badge color-hold"></span>
+          <span class="legend-text"><strong>YELLOW</strong> = Hold</span>
+        </div>
+        <div class="legend-entry">
+          <span class="color-badge color-registered"></span>
+          <span class="legend-text"><strong>BLUE</strong> = Registered</span>
+        </div>
+        <div class="legend-entry">
+          <span class="color-badge color-sold"></span>
+          <span class="legend-text"><strong>DARK GREEN</strong> = Sold</span>
+        </div>
+        <div class="legend-entry">
+          <span class="color-badge color-na"></span>
+          <span class="legend-text"><strong>GREY</strong> = N/A</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="feed-footer-status">
+      <span id="feed-last-updated">Auto-refreshing every 30s</span>
+    </div>
+  </aside>
+
+  <!-- Toggle Button for Floating Control Panel -->
+  <button class="panel-toggle-fab" id="btn-toggle-panel" title="Toggle Controls">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+  </button>
+
+  <!-- Left Control Panel -->
+  <aside class="control-panel" id="control-panel">
+    <div class="panel-header">
+      <h2>BUILDING CONTROLS</h2>
+      <button id="btn-close-panel" style="background:none; border:none; cursor:pointer; color:var(--text-secondary);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <!-- Floor Level Selection & Highlighting -->
+    <div class="section-group" style="background: #f1f4f9; padding: 12px; border-radius: var(--radius-md); border: 1px solid #d7e0ec;">
+      <div class="section-title" style="color: #1e3a8a; display:flex; justify-content:space-between; align-items:center;">
+        <span>FLOOR LEVEL SELECTOR</span>
+        <span id="active-floor-badge" style="font-size:10px; background:#1e3a8a; color:#fff; padding:2px 6px; border-radius:4px;">ALL FLOORS</span>
+      </div>
+
+      <div class="floor-selector-grid" id="floor-selector-container">
+        <!-- Rendered dynamically: All, Ground, 1F to 14F -->
+      </div>
+
+      <div class="btn-grid" style="margin-top: 6px;">
+        <button class="action-btn" id="btn-exploded-floors" style="background:#fff; border: 1px solid #cbd5e1; font-weight: 600; color:#1e3a8a;">
+          Exploded Floors
+        </button>
+        <button class="action-btn" id="btn-normal-floors" style="background:#fff; border: 1px solid #cbd5e1; font-weight: 600;">
+          Normal View
+        </button>
+      </div>
+
+      <div class="btn-grid" style="margin-top: 4px;">
+        <button class="action-btn" id="btn-show-all-floors" style="font-size:10.5px;">Show All Floors</button>
+        <button class="action-btn" id="btn-hide-residential" style="font-size:10.5px;">Hide Residential</button>
+      </div>
+    </div>
+
+    <!-- Building Transparency & Section Cutaway -->
+    <div class="section-group">
+      <div class="section-title">Vertical Inspection</div>
+
+      <div class="slider-control">
+        <div class="slider-label-row">
+          <span>Building Transparency:</span>
+          <span class="slider-val" id="val-bldg-opacity">0%</span>
+        </div>
+        <input type="range" id="slider-bldg-opacity" min="0" max="95" step="5" value="0">
+      </div>
+
+      <div class="toggle-row" style="margin-top: 4px;">
+        <div class="toggle-label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+          <span style="font-weight: 600;">Vertical Section Cut</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-section-cut">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="slider-control" id="section-slider-wrapper" style="display:none; margin-top: 4px;">
+        <div class="slider-label-row">
+          <span>Section Slice Plane:</span>
+          <span class="slider-val" id="val-section-cut">0 m</span>
+        </div>
+        <input type="range" id="slider-section-cut" min="-45" max="45" step="1" value="0">
+      </div>
+    </div>
+
+    <!-- 3-Level Basement Controls -->
+    <div class="section-group" style="background: #f8fafc; padding: 10px; border-radius: var(--radius-md); border: 1px solid #e2e8f0;">
+      <div class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>3-LEVEL BASEMENT (-9.6m)</span>
+        <label class="switch" style="transform: scale(0.85);">
+          <input type="checkbox" id="toggle-basement" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="btn-grid" style="margin-top: 4px;">
+        <button class="action-btn" id="btn-exploded-basement">Explode Basement</button>
+        <button class="action-btn" id="btn-cutaway-basement">Basement Cutaway</button>
+      </div>
+    </div>
+
+    <!-- Element Visibility -->
+    <div class="section-group">
+      <div class="section-title">Model Elements</div>
+      
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <span class="color-indicator color-core"></span>
+          <span>Continuous Stair/Lift Cores (5)</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-cores" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <span class="color-indicator color-ground"></span>
+          <span>Ground Floor Mass</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-ground-floor" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <span class="color-indicator color-corridor"></span>
+          <span>Floor Corridors / Slabs</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-corridors" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
+          <span>Floor Elevation Badges</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-labels">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+          <span>Dark Edge Outlines</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-edges" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Render Styles -->
+    <div class="section-group">
+      <div class="section-title">Render Style</div>
+      <div class="btn-grid-3">
+        <button class="action-btn active" id="btn-mode-solid">Solid</button>
+        <button class="action-btn" id="btn-mode-wireframe">Wireframe</button>
+        <button class="action-btn" id="btn-mode-clay">Clay</button>
+      </div>
+    </div>
+
+    <!-- Selected Unit/Floor Details Card -->
+    <div class="section-group">
+      <div class="section-title">Selected Structure Details</div>
+      <div class="inspect-card" id="inspect-card">
+        <div class="inspect-header">
+          <span class="inspect-id" id="card-unit-name">Select an Apartment</span>
+          <span class="inspect-type" id="card-unit-type">G+14 & B3</span>
+        </div>
+        <div class="inspect-status-banner" id="card-status-banner" style="display:none;">
+          <span class="status-indicator-dot" id="card-status-dot"></span>
+          <span id="card-status-text">STATUS: AVAILABLE</span>
+        </div>
+        <div class="inspect-details">
+          <span class="inspect-label">Floor:</span>
+          <span class="inspect-value" id="card-unit-floor">--</span>
+
+          <span class="inspect-label">Position:</span>
+          <span class="inspect-value" id="card-unit-pos">--</span>
+
+          <span class="inspect-label">Status:</span>
+          <span class="inspect-value" id="card-unit-status">--</span>
+
+          <span class="inspect-label">Unit Type:</span>
+          <span class="inspect-value" id="card-unit-bhk">-9.6m to +48.0m</span>
+          
+          <span class="inspect-label">Carpet Area:</span>
+          <span class="inspect-value" id="card-unit-area">18 Levels</span>
+
+          <span class="inspect-label">Elevation:</span>
+          <span class="inspect-value" id="card-unit-elevation">Ground Level</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Bottom Metric Information Bar -->
+  <footer class="bottom-bar">
+    <div class="stat-item">
+      <span>Structure:</span>
+      <span class="stat-val">G+14 & B3</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span>Height:</span>
+      <span class="stat-val">+48.0 m</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span>Total Flats:</span>
+      <span class="stat-val">364</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span>Live Feed:</span>
+      <span class="stat-val" id="bottom-bar-inventory">Connecting...</span>
+    </div>
+  </footer>
+
+  <!-- Embedded Model Geometry Dataset -->
+  <script src="model_data.js?v=20261013"></script>
+  <!-- Application Script -->
+  <script type="module" src="app.js?v=20261013"></script>
+</body>
+</html>
